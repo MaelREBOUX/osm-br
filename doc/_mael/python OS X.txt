@@ -1,7 +1,0 @@
-
-
-# pour avoir Psycopg2 sous OS X
-# https://gist.github.com/panuta/1852087
-# http://docs.python-guide.org/en/latest/starting/install/osx/
-
-brew install python 
