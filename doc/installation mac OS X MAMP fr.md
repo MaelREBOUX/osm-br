@@ -27,15 +27,18 @@ Installer python
 brew install python
 ```
 
-Installer Flask
+Installer Flask et psycopg
 ```
-pip install Flask
+pip install flask
+pip install psycopg2
 ```
 
 Tester
 ```
 python
 >>> import flask
+>>>
+>>>import psycopg2
 >>>
 ```
 Tout se passe bien si rien ne s'affiche. ctrl + D pour sortir de la console python
@@ -54,6 +57,7 @@ ln -s /usr/local/lib/python2.7/site-packages/jinja2/ jinja2
 ln -s /usr/local/lib/python2.7/site-packages/markupsafe/ markupsafe
 ln -s /usr/local/lib/python2.7/site-packages/itsdangerous.py itsdangerous.py
 ln -s /usr/local/lib/python2.7/site-packages/itsdangerous.pyc itsdangerous.pyc
+ln -s /usr/local/lib/python2.7/site-packages/psycopg2
 ```
 
 
