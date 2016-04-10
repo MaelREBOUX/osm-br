@@ -1,0 +1,250 @@
+
+
+
+API
+apache 2.2 / 2.4 + mod_wsgi
+python 2.7.x + Flask
+
+# on installe flask dans le python de brew / OS X
+pip install Flask
+
+/!\ pb : le python utilisé par MAMP ne voit pas / ne connaît pas les librairies utilisées / installées dans le python de OS X
+On y pare en faisant des liens symboliques vers les "packages" nécessaires.
+
+# rajout des librairies python OS X à MAMP
+cd /Applications/MAMP/Library/lib/python2.7
+ln -s /usr/local/lib/python2.7/site-packages/flask/ flask
+ln -s /usr/local/lib/python2.7/site-packages/jinja2/ jinja2
+ln -s /usr/local/lib/python2.7/site-packages/markupsafe/ markupsafe
+ln -s /usr/local/lib/python2.7/site-packages/itsdangerous.py itsdangerous.py
+ln -s /usr/local/lib/python2.7/site-packages/itsdangerous.pyc itsdangerous.pyc
+
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+# http://www.enigmeta.com/2012/08/16/starting-flask/
+
+$cd /Users/mael/Sites/htdocs/osm-br/
+
+
+$sudo easy_install virtualenv
+
+Searching for virtualenv
+Reading https://pypi.python.org/simple/virtualenv/
+Best match: virtualenv 15.0.1
+Downloading https://pypi.python.org/packages/source/v/virtualenv/virtualenv-15.0.1.tar.gz#md5=28d76a0d9cbd5dc42046dd14e76a6ecc
+Processing virtualenv-15.0.1.tar.gz
+Writing /tmp/easy_install-KmxB7P/virtualenv-15.0.1/setup.cfg
+Running virtualenv-15.0.1/setup.py -q bdist_egg --dist-dir /tmp/easy_install-KmxB7P/virtualenv-15.0.1/egg-dist-tmp-ohfQhf
+warning: no previously-included files matching '*' found under directory 'docs/_templates'
+warning: no previously-included files matching '*' found under directory 'docs/_build'
+creating /usr/local/lib/python2.7/site-packages/virtualenv-15.0.1-py2.7.egg
+Extracting virtualenv-15.0.1-py2.7.egg to /usr/local/lib/python2.7/site-packages
+Adding virtualenv 15.0.1 to easy-install.pth file
+Installing virtualenv script to /usr/local/bin
+
+Installed /usr/local/lib/python2.7/site-packages/virtualenv-15.0.1-py2.7.egg
+Processing dependencies for virtualenv
+Finished processing dependencies for virtualenv
+
+
+# on crée un virtualenv dans le répertoire de notre API
+
+cd /Users/mael/Sites/htdocs/osm-br/
+$ virtualenv api
+New python executable in /Users/mael/Sites/htdocs/osm-br/api/bin/python2.7
+Also creating executable in /Users/mael/Sites/htdocs/osm-br/api/bin/python
+Installing setuptools, pip, wheel...done.
+
+ce qui a été créé :
+.Python -> /usr/local/Cellar/python/2.7.11/Frameworks/Python.framework/Versions/2.7/Python
+bin/
+include/
+lib/
+pip-selfcheck.json
+
+
+# installation de flask
+$cd api
+
+$source bin/activate
+(api)$pip install flask
+Collecting flask
+Collecting itsdangerous>=0.21 (from flask)
+Collecting Werkzeug>=0.7 (from flask)
+  Using cached Werkzeug-0.11.5-py2.py3-none-any.whl
+Collecting Jinja2>=2.4 (from flask)
+  Using cached Jinja2-2.8-py2.py3-none-any.whl
+Collecting MarkupSafe (from Jinja2>=2.4->flask)
+Installing collected packages: itsdangerous, Werkzeug, MarkupSafe, Jinja2, flask
+Successfully installed Jinja2-2.8 MarkupSafe-0.23 Werkzeug-0.11.5 flask-0.10.1 itsdangerous-0.24
+
+(api)$touch helloflask.py
+
+++++++
+#-*- coding: utf-8 -*-
+
+from flask import Flask
+app = Flask(__name__)
+
+@app.route("/")
+def hello():
+    return "Hello World!"
+
+if __name__ == "__main__":
+    app.run()
+++++++
+
+$ python helloflask.py
+ * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+127.0.0.1 - - [03/Apr/2016 10:30:41] "GET / HTTP/1.1" 200 -
+
+=>  http://127.0.0.1:5000/
+
+
+pip freeze > requirements.txt
+
+
+nano application.wsgi
+
+++++++
+import os, sys
+
+PROJECT_DIR = '/Users/mael/Sites/htdocs/osm-br/api/'
+
+activate_this = os.path.join(PROJECT_DIR, 'bin', 'activate_this.py')
+execfile(activate_this, dict(__file__=activate_this))
+sys.path.append(PROJECT_DIR)
+
+from helloflask import app as application
+++++++
+
+nano /…/osm-br.conf
+
+++++++
+<VirtualHost *:80>
+	
+	ServerName osm-br.local
+	
+	DocumentRoot "/Users/mael/Sites/htdocs/osm-br"
+
+	#WSGIDaemonProcess osmbr-api user=www-data group=www-data threads=5
+	WSGIDaemonProcess osmbr-api user=mael group=admin threads=5
+	WSGIScriptAlias /api /Users/mael/Sites/htdocs/osm-br/api/application.wsgi
+	
+
+	<Directory "/Users/mael/Sites/htdocs/osm-br">
+		Options Indexes Includes FollowSymLinks
+
+		AllowOverride All
+		Order allow,deny
+        Allow from all
+	</Directory>
+
+	<Directory "/Users/mael/Sites/htdocs/osm-br/api">
+	    WSGIProcessGroup osmbr-api
+	    WSGIApplicationGroup %{GLOBAL}
+	    Order deny,allow
+	    Allow from all
+
+		#Options Indexes Includes FollowSymLinks +ExecCGI
+
+		#AddHandler wsgi-script .wsgi .py
+
+	</Directory>
+
+
+	LimitRequestBody 1048576
+
+
+	ErrorLog /Users/mael/Sites/logs/osmbr_error.log
+	CustomLog /Users/mael/Sites/logs/osmbr_access.log common
+	
+</VirtualHost>
+++++++
+
+# pour git
+
+cd /Users/mael/Sites/htdocs/osm-br/api
+nano .gitignore
+
+++++++
+# Virtualenv
+.Python
+bin
+lib
+include
+
+# Mac OS X custom attribute files
+.DS_Store
+++++++
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+http://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
+
+https://code.google.com/archive/p/modwsgi/wikis/ConfigurationGuidelines.wiki
+
+http://flask.pocoo.org/
+
+http://apprendre-python.com/page-virtualenv-python-environnement-virtuel
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
+
+
+
+
+1 : préciser à apache quel python utiliser
+
+http://localhost/info.php montre 
+PATH 	/usr/bin:/bin:/usr/sbin:/sbin 
+SERVER_SOFTWARE 	Apache/2.2.29 (Unix) mod_wsgi/3.5 Python/2.7.10 PHP/5.6.10 DAV/2 mod_ssl/2.2.29 OpenSSL/0.9.8y mod_perl/2.0.9 Perl/v5.22.0 
+
+or dans le terminal OS X :
+$python
+Python 2.7.11 (default, Jan 22 2016, 16:30:50) 
+[GCC 4.2.1 Compatible Apple LLVM 6.0 (clang-600.0.57)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from flask import Flask
+>>> 
+
+whereis python2.7
+/usr/bin/python2.7
+
+le python 2.7.11 de brew 
+
+
+cd /Applications/MAMP/Library/bin/
+mv python2.7 python2.7_org
+mv python2.7-config python2.7-config_org
+ln -s /usr/bin/python2.7 python2.7
+ln -s /usr/bin/python2.7-config python2.7-config
+
+
+$ which python2.7
+/usr/local/bin/python2.7
+
+/System/Library/Frameworks/Python.framework/Versions/2.7/Python
+-> 2.7.11 + flask ok
+
+/usr/local/bin/python
+-> 2.7.11 + flask ok
+
+
+
+
+
+

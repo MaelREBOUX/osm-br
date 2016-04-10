@@ -1,0 +1,55 @@
+
+
+======== apache vhost  ==========
+
+
+<VirtualHost *:80>
+	
+	ServerName osm-br.local
+	
+	DocumentRoot "/Users/mael/Sites/htdocs/osm-br"
+
+	<Directory "/Users/mael/Sites/htdocs/osm-br">
+		Options Indexes Includes FollowSymLinks ExecCGI
+
+		AddHandler wsgi-script .wsgi .py
+
+		AllowOverride All
+		Order allow,deny
+        Allow from all
+	</Directory>
+
+	ErrorLog /Users/mael/Sites/logs/osmbr_error.log
+	CustomLog /Users/mael/Sites/logs/osmbr_access.log common
+	
+</VirtualHost>
+
+
+======== test.py  ==========
+
+#-*- coding: utf-8 -*-
+
+def wsgi_app(environ, start_response):
+    import sys
+    output = sys.version.encode('utf8')
+    status = '200 OK'
+    headers = [('Content-type', 'text/plain'),
+               ('Content-Length', str(len(output)))]
+    start_response(status, headers)
+    yield output
+
+# mod_wsgi need the *application* variable to serve our small app
+application = wsgi_app
+
+
+======== test  ==========
+
+http://osm-br.local/api/test.py
+
+devrait afficher
+
+2.7.10 (default, Jul  6 2015, 13:26:37) 
+[GCC 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2336.1.00)]
+
+
+
